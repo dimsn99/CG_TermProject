@@ -1,0 +1,11 @@
+Model Information:
+* title:	Ancient column
+* source:	https://sketchfab.com/3d-models/ancient-column-340b78f25c6c4daaae53fbdc2f4a7c70
+* author:	bymarlee.jpg (https://sketchfab.com/bymarlee.jpg)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Ancient column" (https://sketchfab.com/3d-models/ancient-column-340b78f25c6c4daaae53fbdc2f4a7c70) by bymarlee.jpg (https://sketchfab.com/bymarlee.jpg) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
