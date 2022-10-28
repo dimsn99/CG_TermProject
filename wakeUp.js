@@ -73,11 +73,7 @@ window.onload = function init()
 			// change all treasures colors
 			for(i in TreasureObj.objectArray){
 				// change color
-				TreasureObj.objectArray[i].traverse( function ( object ) {
-					if (object.isMesh) {
-						object.material.color = new THREE.Color(colors[nextColor]);
-					}
-				} );
+				TreasureObj.changeColor(i, colors[nextColor]);
 			}
 			nextColor = (nextColor+1) % colors.length;
 		}
@@ -144,6 +140,20 @@ class GameObject
 		}, undefined, function (error) {
 			console.error(error);
 		});
+	}
+
+	/**
+	 * 
+	 * @param {int} objectNum 
+	 * @param {ThreeJsColor} color 
+	 */
+	changeColor(objectNum, color)
+	{
+		this.objectArray[objectNum].traverse( function ( object ) {
+			if (object.isMesh) {
+				object.material.color = new THREE.Color(color);
+			}
+		} );
 	}
 }
 
