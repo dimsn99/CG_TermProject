@@ -75,7 +75,7 @@ window.onload = function init()
 	//------------------------------------------------------
 	// Load player object
 	//------------------------------------------------------
-	let PlayerObj = new PlayerObject();
+	let PlayerObj = new GameObject();
 	var playerPos = [[PLAYER_INIT_X, PLAYER_INIT_Y, PLAYER_INIT_Z]]
 	PlayerObj.load(scene, "./model/character_model/scene.gltf", playerPos, [0.03,0.03,0.03]);
 
@@ -83,54 +83,7 @@ window.onload = function init()
 	// Player's moving
 	//------------------------------------------------------
 	const Clock = new THREE.Clock();
-	document.addEventListener('keydown', (event)=>{
-		const axis = new THREE.Vector3(0,0,1);
-		const speed = 0.5;
-		const rotSpeed = 0.1;
-		var Obj3d =  PlayerObj.objectArray[0];
-
-		// Update camera target & position
-		controls.target = Obj3d.position;
-		camera.position.x = Obj3d.position.x - PLAYER_INIT_X + CAMERA_INIT_X;
-		camera.position.y = Obj3d.position.y - PLAYER_INIT_Y + CAMERA_INIT_Y;
-		camera.position.z = Obj3d.position.z - PLAYER_INIT_Z + CAMERA_INIT_Z;
-
-		console.log(Obj3d.position);
-
-		// Animation
-		PlayerObj.mixerArray[0].update(Clock.getDelta());
-
-		// Forward
-		if(event.key == 'w'){
-			Obj3d.translateY(-speed);
-		}
-		// Back
-		if(event.key == 's'){
-			Obj3d.translateY(speed);
-		}
-		// Left Rotation
-		if(event.key == 'a'){
-			Obj3d.rotateOnAxis(axis,rotSpeed);
-		}
-		// Right Rotation
-		if(event.key =='d'){
-			Obj3d.rotateOnAxis(axis,-rotSpeed);
-		}
-
-		// Map Border
-		if(Obj3d.position.x < -45){
-			Obj3d.position.x = -45;
-		}
-		if(Obj3d.position.x > 130){
-			Obj3d.position.x = 130;
-		}
-		if(Obj3d.position.z < -50){
-			Obj3d.position.z = -50;
-		}
-		if(Obj3d.position.z > 135){
-			Obj3d.position.z = 135;
-		}
-	})
+	movePlayer(Clock, camera, controls, PlayerObj);
 
 	animate(renderer, scene, camera, controls);
 }
@@ -146,6 +99,7 @@ class GameObject
 	constructor()
 	{
 		this.objectArray = new Array();
+		this.mixerArray = new Array();
 	};
 
 	/**
@@ -159,7 +113,7 @@ class GameObject
 	{
 		var i = 0;
 		for(i in posArray){
-			this.loadGltf(scene, gltfLoc, posArray[i], scale, this.objectArray);
+			this.loadGltf(scene, gltfLoc, posArray[i], scale, this.objectArray, this.mixerArray);
 		}
 	}
 
@@ -170,8 +124,9 @@ class GameObject
 	 * @param {float[]} pos
 	 * @param {float[]} scale
 	 * @param {Array} objectArray
+	 * @param {Array} mixerArray
 	 */
-	loadGltf(scene, gltfLoc, pos, scale, objectArray)
+	loadGltf(scene, gltfLoc, pos, scale, objectArray, mixerArray)
 	{
 		const loader = new THREE.GLTFLoader();
 		loader.load(gltfLoc, function(gltf){
@@ -189,6 +144,16 @@ class GameObject
 			objectArray.push(obj);
 
 			scene.add(gltf.scene);
+
+			// animation
+			if(gltf.animations[0] != undefined){
+				var mixer = new THREE.AnimationMixer(gltf.scene);
+        		const action = mixer.clipAction(gltf.animations[0]);
+        		action.play()
+
+				mixerArray.push(mixer);
+			}
+
 		}, undefined, function (error) {
 			console.error(error);
 		});
@@ -236,80 +201,66 @@ class GameObject
 
 /////////////////////////////////////////////////
 //
-// PlayerObject class
+// Functions
 //
 /////////////////////////////////////////////////
 
-class PlayerObject extends GameObject
+/**
+ * 
+ * @param {ThreeJsColock} Clock 
+ * @param {ThreeJsCamera} camera 
+ * @param {ThreeJsOrbitControls} controls 
+ * @param {GameObject} PlayerObj 
+ */
+function movePlayer(Clock, camera, controls, PlayerObj)
 {
-	constructor()
-	{
-		super();
-		this.mixerArray = new Array();
-	}
+	document.addEventListener('keydown', (event)=>{
+		const axis = new THREE.Vector3(0,0,1);
+		const speed = 0.5;
+		const rotSpeed = 0.1;
+		var Obj3d =  PlayerObj.objectArray[0];
 
-	/**
-	 * 
-	 * @param {ThreeJsScene} scene 
-	 * @param {string} gltfLoc 
-	 * @param {float[][]} posArray 
-	 * @param {float[]} scale 
-	 */
-	load(scene, gltfLoc, posArray, scale)
-	{
-		var i = 0;
-		for(i in posArray){
-			this.loadGltf(scene, gltfLoc, posArray[i], scale, this.objectArray, this.mixerArray);
+		// Update camera target & position
+		controls.target = Obj3d.position;
+		camera.position.x = Obj3d.position.x - PLAYER_INIT_X + CAMERA_INIT_X;
+		camera.position.y = Obj3d.position.y - PLAYER_INIT_Y + CAMERA_INIT_Y;
+		camera.position.z = Obj3d.position.z - PLAYER_INIT_Z + CAMERA_INIT_Z;
+
+		// Animation
+		PlayerObj.mixerArray[0].update(Clock.getDelta());
+
+		// Forward
+		if(event.key == 'w'){
+			Obj3d.translateY(-speed);
 		}
-	}
+		// Back
+		if(event.key == 's'){
+			Obj3d.translateY(speed);
+		}
+		// Left Rotation
+		if(event.key == 'a'){
+			Obj3d.rotateOnAxis(axis,rotSpeed);
+		}
+		// Right Rotation
+		if(event.key =='d'){
+			Obj3d.rotateOnAxis(axis,-rotSpeed);
+		}
 
-	/**
-	 * 
-	 * @param {string} gltfLoc 
-	 * @param {ThreeJsScene} scene 
-	 * @param {float[]} pos
-	 * @param {float[]} scale
-	 * @param {Array} objectArray 
-	 * @param {Array} mixerArray
-	 */
-	loadGltf(scene, gltfLoc, pos, scale, objectArray, mixerArray)
-	{
-		const loader = new THREE.GLTFLoader();
-		loader.load(gltfLoc, function(gltf){
-			// gltf shadow
-			gltf.scene.traverse( function ( object ) {
-				if (object.isMesh) {
-					object.receiveShadow = true;
-					object.castShadow = true;
-				}
-			} );
-
-			var obj = gltf.scene.children[0];
-			obj.position.set(pos[0], pos[1], pos[2]);
-			obj.scale.set(scale[0], scale[1], scale[2]);	
-			objectArray.push(obj);
-			
-			scene.add(gltf.scene);
-			
-			//animation
-			var mixer = new THREE.AnimationMixer(gltf.scene);
-        	const action = mixer.clipAction(gltf.animations[0]);
-        	action.play()
-
-			mixerArray.push(mixer);
-			
-		}, undefined, function (error) {
-			console.error(error);
-		});
-	}
+		// Map Border
+		if(Obj3d.position.x < -45){
+			Obj3d.position.x = -45;
+		}
+		if(Obj3d.position.x > 130){
+			Obj3d.position.x = 130;
+		}
+		if(Obj3d.position.z < -50){
+			Obj3d.position.z = -50;
+		}
+		if(Obj3d.position.z > 135){
+			Obj3d.position.z = 135;
+		}
+	});
 }
-
-
-/////////////////////////////////////////////////
-//
-// Animate function
-//
-/////////////////////////////////////////////////
 
 /**
  * 
