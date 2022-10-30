@@ -1,3 +1,10 @@
+const CAMERA_INIT_X = 10;
+const CAMERA_INIT_Y = 30;
+const CAMERA_INIT_Z = 20;
+
+const PLAYER_INIT_X = 35;
+const PLAYER_INIT_Y = 0.6;
+const PLAYER_INIT_Z = 35;
 
 window.onload = function init()
 {
@@ -22,15 +29,18 @@ window.onload = function init()
 	//------------------------------------------------------
 	// Camera settings
 	//------------------------------------------------------
-	camera = new THREE.PerspectiveCamera(45,canvas.width / canvas.height, 1, 1000);
-	camera.position.x = 60;
-	camera.position.y = 20;
-	camera.position.z = 60;
 
-	// !! OrbitContols 사용시 시점 초기화 !!
+	// Prespective Camera
+	const camera = new THREE.PerspectiveCamera(45,canvas.width / canvas.height, 1, 1000);
+	camera.position.x = CAMERA_INIT_X;
+	camera.position.y = CAMERA_INIT_Y;
+	camera.position.z = CAMERA_INIT_Z;
+
+	// Orbit Controls
 	const controls = new THREE.OrbitControls(camera, renderer.domElement);
-	// start point
-	camera.lookAt(50, 0, 50)
+	controls.target = new THREE.Vector3(PLAYER_INIT_X, PLAYER_INIT_Y, PLAYER_INIT_Z);
+	controls.enabled = false;
+	controls.update()
 
 	//------------------------------------------------------
 	// Light settings
@@ -63,31 +73,73 @@ window.onload = function init()
 	TreasureObj.load(scene, "./model/gold_coin_material/scene.gltf", getTreasurePos(), [0.05,0.05,0.05]);
 
 	//------------------------------------------------------
-	// Treasure color changing test
+	// Load player object
 	//------------------------------------------------------
-	var colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffffff];
-	var nextColor = 0;
-	// if press a button
+	let PlayerObj = new PlayerObject();
+	var playerPos = [[PLAYER_INIT_X, PLAYER_INIT_Y, PLAYER_INIT_Z]]
+	PlayerObj.load(scene, "./model/character_model/scene.gltf", playerPos, [0.03,0.03,0.03]);
+
+	//------------------------------------------------------
+	// Player's moving
+	//------------------------------------------------------
+	const Clock = new THREE.Clock();
 	document.addEventListener('keydown', (event)=>{
+		const axis = new THREE.Vector3(0,0,1);
+		const speed = 0.5;
+		const rotSpeed = 0.1;
+		var Obj3d =  PlayerObj.objectArray[0];
+
+		// Update camera target & position
+		controls.target = Obj3d.position;
+		camera.position.x = Obj3d.position.x - PLAYER_INIT_X + CAMERA_INIT_X;
+		camera.position.y = Obj3d.position.y - PLAYER_INIT_Y + CAMERA_INIT_Y;
+		camera.position.z = Obj3d.position.z - PLAYER_INIT_Z + CAMERA_INIT_Z;
+
+		console.log(Obj3d.position);
+
+		// Animation
+		PlayerObj.mixerArray[0].update(Clock.getDelta());
+
+		// Forward
+		if(event.key == 'w'){
+			Obj3d.translateY(-speed);
+		}
+		// Back
+		if(event.key == 's'){
+			Obj3d.translateY(speed);
+		}
+		// Left Rotation
 		if(event.key == 'a'){
-			// change all treasures colors
-			for(i in TreasureObj.objectArray){
-				// change color
-				TreasureObj.changeColor(i, colors[nextColor]);
-			}
-			nextColor = (nextColor+1) % colors.length;
+			Obj3d.rotateOnAxis(axis,rotSpeed);
+		}
+		// Right Rotation
+		if(event.key =='d'){
+			Obj3d.rotateOnAxis(axis,-rotSpeed);
+		}
+
+		// Map Border
+		if(Obj3d.position.x < -45){
+			Obj3d.position.x = -45;
+		}
+		if(Obj3d.position.x > 130){
+			Obj3d.position.x = 130;
+		}
+		if(Obj3d.position.z < -50){
+			Obj3d.position.z = -50;
+		}
+		if(Obj3d.position.z > 135){
+			Obj3d.position.z = 135;
 		}
 	})
 
-	console.log(canvas);
-	animate(renderer, scene, camera);
+	animate(renderer, scene, camera, controls);
 }
 
 /////////////////////////////////////////////////
 //
 // GameObject class
 //
-/////////////////////////////////////////////////]
+/////////////////////////////////////////////////
 
 class GameObject
 {
@@ -155,7 +207,103 @@ class GameObject
 			}
 		} );
 	}
+
+	/**
+	 * 
+	 * @param {int} objectNum 
+	 * @param {float[]} pos 
+	 */
+	changePosition(objectNum, pos)
+	{
+		this.objectArray[objectNum].position.set(pos[0], pos[1], pos[2]);
+	}
+	
+	/**
+	 * 
+	 * @param {int} objectNum 
+	 * @param {float[]} value 
+	 */
+	move(objectNum, value)
+	{
+		var objPos = this.objectArray[objectNum].position
+		var x = objPos.x + value[0];
+		var y = objPos.y + value[1];
+		var z = objPos.z + value[2];
+
+		objPos.set(x, y, z);
+	}
 }
+
+/////////////////////////////////////////////////
+//
+// PlayerObject class
+//
+/////////////////////////////////////////////////
+
+class PlayerObject extends GameObject
+{
+	constructor()
+	{
+		super();
+		this.mixerArray = new Array();
+	}
+
+	/**
+	 * 
+	 * @param {ThreeJsScene} scene 
+	 * @param {string} gltfLoc 
+	 * @param {float[][]} posArray 
+	 * @param {float[]} scale 
+	 */
+	load(scene, gltfLoc, posArray, scale)
+	{
+		var i = 0;
+		for(i in posArray){
+			this.loadGltf(scene, gltfLoc, posArray[i], scale, this.objectArray, this.mixerArray);
+		}
+	}
+
+	/**
+	 * 
+	 * @param {string} gltfLoc 
+	 * @param {ThreeJsScene} scene 
+	 * @param {float[]} pos
+	 * @param {float[]} scale
+	 * @param {Array} objectArray 
+	 * @param {Array} mixerArray
+	 */
+	loadGltf(scene, gltfLoc, pos, scale, objectArray, mixerArray)
+	{
+		const loader = new THREE.GLTFLoader();
+		loader.load(gltfLoc, function(gltf){
+			// gltf shadow
+			gltf.scene.traverse( function ( object ) {
+				if (object.isMesh) {
+					object.receiveShadow = true;
+					object.castShadow = true;
+				}
+			} );
+
+			var obj = gltf.scene.children[0];
+			obj.position.set(pos[0], pos[1], pos[2]);
+			obj.scale.set(scale[0], scale[1], scale[2]);	
+			objectArray.push(obj);
+			
+			scene.add(gltf.scene);
+			
+			//animation
+			var mixer = new THREE.AnimationMixer(gltf.scene);
+        	const action = mixer.clipAction(gltf.animations[0]);
+        	action.play()
+
+			mixerArray.push(mixer);
+			
+		}, undefined, function (error) {
+			console.error(error);
+		});
+	}
+}
+
 
 /////////////////////////////////////////////////
 //
@@ -168,11 +316,13 @@ class GameObject
  * @param {ThreeJsRenderer} renderer 
  * @param {ThreeJSScene} scene 
  * @param {ThreeJsCamera} camera 
+ * @param {ThreeJSOrbitControls} controls
  */
-function animate(renderer, scene, camera) 
+function animate(renderer, scene, camera, controls) 
 {
+	controls.update();
 	renderer.render(scene, camera);
-	requestAnimationFrame(()=>animate(renderer, scene, camera));
+	requestAnimationFrame(()=>animate(renderer, scene, camera, controls));
 }
 
 /////////////////////////////////////////////////
