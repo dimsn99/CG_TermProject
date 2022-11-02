@@ -75,16 +75,19 @@ window.onload = function init()
 	//------------------------------------------------------
 	// Load player object
 	//------------------------------------------------------
-	let PlayerObj = new GameObject();
+	let PlayerObj = new PlayerObject();
 	var playerPos = [[PLAYER_INIT_X, PLAYER_INIT_Y, PLAYER_INIT_Z]]
 	PlayerObj.load(scene, "./model/character_model/scene.gltf", playerPos, [0.03,0.03,0.03]);
 
 	//------------------------------------------------------
-	// Player's moving
+	// Player control
 	//------------------------------------------------------
 	const Clock = new THREE.Clock();
-	movePlayer(Clock, camera, controls, PlayerObj);
+	const Keyboard = new KeyboardControl();
+	Keyboard.keyboardState();
+	setInterval(()=>PlayerObj.control(Clock, camera, controls, Keyboard.keys), 16);//16 == 60fps
 
+	// animate
 	animate(renderer, scene, camera, controls);
 }
 
@@ -154,7 +157,7 @@ class GameObject
 				mixerArray.push(mixer);
 			}
 
-		}, undefined, function (error) {
+		},undefined,function (error) {
 			console.error(error);
 		});
 	}
@@ -201,24 +204,30 @@ class GameObject
 
 /////////////////////////////////////////////////
 //
-// Functions
+// PlayerObject class
 //
 /////////////////////////////////////////////////
 
-/**
- * 
- * @param {ThreeJsColock} Clock 
- * @param {ThreeJsCamera} camera 
- * @param {ThreeJsOrbitControls} controls 
- * @param {GameObject} PlayerObj 
- */
-function movePlayer(Clock, camera, controls, PlayerObj)
+class PlayerObject extends GameObject
 {
-	document.addEventListener('keydown', (event)=>{
+	constructor()
+	{
+		super();
+	}
+
+	/**
+	 * 
+	 * @param {ThreeJsColock} Clock 
+	 * @param {ThreeJsCamera} camera 
+	 * @param {ThreeJsOrbitControls} controls 
+	 * @param {Set} keys
+	 */
+	control(Clock, camera, controls, keys)
+	{
 		const axis = new THREE.Vector3(0,0,1);
-		const speed = 0.5;
-		const rotSpeed = 0.1;
-		var Obj3d =  PlayerObj.objectArray[0];
+		const speed = 0.4;
+		const rotSpeed = 0.05;
+		var Obj3d =  this.objectArray[0];
 
 		// Update camera target & position
 		controls.target = Obj3d.position;
@@ -227,23 +236,27 @@ function movePlayer(Clock, camera, controls, PlayerObj)
 		camera.position.z = Obj3d.position.z - PLAYER_INIT_Z + CAMERA_INIT_Z;
 
 		// Animation
-		PlayerObj.mixerArray[0].update(Clock.getDelta());
-
-		// Forward
-		if(event.key == 'w'){
-			Obj3d.translateY(-speed);
-		}
-		// Back
-		if(event.key == 's'){
-			Obj3d.translateY(speed);
-		}
-		// Left Rotation
-		if(event.key == 'a'){
-			Obj3d.rotateOnAxis(axis,rotSpeed);
-		}
-		// Right Rotation
-		if(event.key =='d'){
-			Obj3d.rotateOnAxis(axis,-rotSpeed);
+		if(keys.size != 0)
+			this.mixerArray[0].update(Clock.getDelta());
+	
+		var key = null;
+		for(key of keys){
+			// Forward
+			if(key == 'w'){
+				Obj3d.translateY(-speed);
+			}
+			// Back
+			if(key == 's'){
+				Obj3d.translateY(speed);
+			}
+			// Left Rotation
+			if(key == 'a'){
+				Obj3d.rotateOnAxis(axis,rotSpeed);
+			}
+			// Right Rotation
+			if(key =='d'){
+				Obj3d.rotateOnAxis(axis,-rotSpeed);
+			}
 		}
 
 		// Map Border
@@ -259,8 +272,38 @@ function movePlayer(Clock, camera, controls, PlayerObj)
 		if(Obj3d.position.z > 135){
 			Obj3d.position.z = 135;
 		}
-	});
+	}
 }
+
+/////////////////////////////////////////////////
+//
+// Keyboard Class
+//
+/////////////////////////////////////////////////
+
+class KeyboardControl{
+	constructor()
+	{
+		this.keys = new Set();
+	}
+
+	keyboardState()
+	{
+		var keys = this.keys;
+		window.addEventListener('keydown', (event)=>{
+			keys.add(event.key);
+		});
+		window.addEventListener('keyup', (event)=>{
+			keys.delete(event.key);
+		});
+	}
+}
+
+/////////////////////////////////////////////////
+//
+// Functions
+//
+/////////////////////////////////////////////////
 
 /**
  * 
