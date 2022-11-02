@@ -80,15 +80,37 @@ window.onload = function init()
 	PlayerObj.load(scene, "./model/character_model/scene.gltf", playerPos, [0.03,0.03,0.03]);
 
 	//------------------------------------------------------
-	// Player control
+	// Enable keyboard
 	//------------------------------------------------------
 	const Clock = new THREE.Clock();
 	const Keyboard = new KeyboardControl();
 	Keyboard.keyboardState();
-	setInterval(()=>PlayerObj.control(Clock, camera, controls, Keyboard.keys), 16);//16 == 60fps
 
-	// animate
-	animate(renderer, scene, camera, controls);
+	//------------------------------------------------------
+	// Animate
+	//------------------------------------------------------
+	function run(){
+		try{
+			// Keyboard control
+			PlayerObj.control(Clock, camera, controls, Keyboard.keys);
+
+			// Collision detection
+			// 함수 (충돌 확인할 게임 오브젝트, 충돌 확인할 구역 크기, 충돌 시 실행할 함수)
+			PlayerObj.checkCollision(TreasureObj, 3, (object)=>{	
+				// 여기에서부터 플레이어 오브젝트가 보물 오브젝트에 닿았다면 실행할 내용
+				// 플레이어와 충돌한 오브젝트는 object.~ 로 접근 가능
+
+				console.log('detect');
+				console.log(object.position); // 충돌 오브젝트 접근 예시
+			});
+		}catch(e){ console.log(e) }
+
+		controls.update();
+		renderer.render(scene, camera);
+		requestAnimationFrame(run);
+	}	
+
+	requestAnimationFrame(run);
 }
 
 /////////////////////////////////////////////////
@@ -273,6 +295,33 @@ class PlayerObject extends GameObject
 			Obj3d.position.z = 135;
 		}
 	}
+
+	/**
+	 * 
+	 * @param {GameObject} Other 
+	 * @param {float} collisionSize
+	 * @param {function} func 
+	 */
+	checkCollision(Other, collisionSize, func)
+	{
+		const COL_SIZE = collisionSize;
+
+		const thisX = this.objectArray[0].position.x;
+		const thisZ = this.objectArray[0].position.z;
+
+		// Collision detection
+		for(var i in Other.objectArray){
+			const otherX = Other.objectArray[i].position.x;
+			const otherZ = Other.objectArray[i].position.z;
+
+			if( otherX - COL_SIZE < thisX && thisX < otherX + COL_SIZE &&
+				otherZ - COL_SIZE < thisZ && thisZ < otherZ + COL_SIZE ){
+
+				// Function
+				func(Other.objectArray[i]);
+			}
+		}
+	}
 }
 
 /////////////////////////////////////////////////
@@ -305,19 +354,7 @@ class KeyboardControl{
 //
 /////////////////////////////////////////////////
 
-/**
- * 
- * @param {ThreeJsRenderer} renderer 
- * @param {ThreeJSScene} scene 
- * @param {ThreeJsCamera} camera 
- * @param {ThreeJSOrbitControls} controls
- */
-function animate(renderer, scene, camera, controls) 
-{
-	controls.update();
-	renderer.render(scene, camera);
-	requestAnimationFrame(()=>animate(renderer, scene, camera, controls));
-}
+
 
 /////////////////////////////////////////////////
 //
