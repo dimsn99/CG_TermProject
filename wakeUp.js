@@ -135,7 +135,6 @@ window.onload = function init()
 				
 				//object animation
 				if(object.position.y < 20){
-					TreasureObj.changeColor(0, [1, 1, 0]);
 					object.position.y += 0.1;
 					camera.position.x = object.position.x + 30;
 					camera.position.z = object.position.z + 30;
