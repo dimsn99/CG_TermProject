@@ -107,7 +107,7 @@ window.onload = function init()
 	function run(){
 		// If found all the treasures
 		if(found == 5){
-			alert("clear!");
+			//alert("clear!");
 			//found += 1;
 			location.href = "../start_end/game_endpage.html";
 		}
