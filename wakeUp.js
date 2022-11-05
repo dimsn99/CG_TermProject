@@ -109,7 +109,7 @@ window.onload = function init()
 		if(found == 5){
 			alert("clear!");
 			//found += 1;
-			location.href = "./start_end/game_endpage.html";
+			location.href = "../start_end/game_endpage.html";
 		}
 		
 		//load after 3 seconds
